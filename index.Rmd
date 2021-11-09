@@ -1,11 +1,14 @@
 ---
 title: "IODS course project"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
   html_document:
     theme: cosmo
-    toc: true
+    toc: yes
     toc_depth: 2
-    fig_caption: true
+    fig_caption: yes
     fig_width: 6
     fig_height: 4
     author: "Irina"
