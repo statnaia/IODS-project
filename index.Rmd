@@ -20,11 +20,6 @@ output:
 
 ```{r child = "chapter1.Rmd"}
 # This will include Chapter 1 (that is updated in its own file) in the document.
-#install.packages("ggplot2")
-library(ggplot2)
-
-#install.packages("dplyr")
-library(dplyr)
 ```
   
 ***

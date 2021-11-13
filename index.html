@@ -182,13 +182,8 @@ pre code {
 </div>
 <div id="about-the-project" class="section level1">
 <h1>About the project</h1>
-<p><em>Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.</em></p>
-<p>The link to my GitHub repository is <a href="https://github.com/statnaia/IODS-project" class="uri">https://github.com/statnaia/IODS-project</a> The link to GitHub Pages is <a href="https://statnaia.github.io/IODS-project/" class="uri">https://statnaia.github.io/IODS-project/</a></p>
-<pre class="r"><code># This is a so-called &quot;R chunk&quot; where you can write R code.
-
-date()</code></pre>
-<pre><code>## [1] &quot;Sat Nov 13 17:12:50 2021&quot;</code></pre>
-<p>The text continues here.</p>
+<p>The link to my GitHub repository is <a href="https://github.com/statnaia/IODS-project" class="uri">https://github.com/statnaia/IODS-project</a><br />
+The link to GitHub Pages is <a href="https://statnaia.github.io/IODS-project/" class="uri">https://statnaia.github.io/IODS-project/</a></p>
 <hr />
 </div>
 <div id="chapter-2-regression-and-model-validation" class="section level1">
@@ -215,6 +210,9 @@ str(learning2014)</code></pre>
 <p>First we explore the data by constructing scatter plots, PDFs and correlations between the variables by gender. Pink color denotes the information on female participants of the survey, and cyan color denotes the information on males. Number of females is approximately twice larger than the number of males. Most of the respondents are under age 35-40. The boxplots and PDFs that denote Global attitude toward statistics, Deep approach, Surface approach, Strategic approach and Total points look quite similar for both genders. Overall males have somewhat higher scores for attitude that females and vice versa for Surface approach. Surface approach scores are negatively correlated with all other variables.</p>
 <p>The correlations between variables are in general quite low, and non-significant in many cases. This also can be seen from the scatter plots, the relationships between variables seem mostly quite random. Surface approach scores are negatively correlated with all other variables, but are significant only for males when correlated with Deep approach and Global attitude toward statistics. On the other hand, variables Global attitude toward statistics and Total points are significantly positively correlated with each other for both males and females.</p>
 <pre class="r"><code># access the GGally and ggplot2 libraries
+#install.packages(&quot;ggplot2&quot;)
+#install.packages(&quot;dplyr&quot;)
+
 library(ggplot2)
 library(GGally)</code></pre>
 <pre><code>## Registered S3 method overwritten by &#39;GGally&#39;:
@@ -295,7 +293,7 @@ plot(my_model2, which = c(1,2,5))</code></pre>
 <li>Assume the reader has no previous knowledge of your data or the more advanced methods you are using.</li>
 </ul>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Sat Nov 13 17:12:58 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Sat Nov 13 17:19:53 2021&quot;</code></pre>
 <p>Here we go again…</p>
 <hr />
 <p>(more chapters to be added similarly as we proceed with the course!)</p>

@@ -1,20 +1,6 @@
 
 # About the project
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
-
-The link to my GitHub repository is https://github.com/statnaia/IODS-project
+The link to my GitHub repository is https://github.com/statnaia/IODS-project \
 The link to GitHub Pages is https://statnaia.github.io/IODS-project/
-
-```{r}
-# This is a so-called "R chunk" where you can write R code.
-
-date()
-
-```
-The text continues here.
-
-```{r}
-
-```
 

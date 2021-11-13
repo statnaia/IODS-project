@@ -191,6 +191,9 @@ str(learning2014)</code></pre>
 <p>First we explore the data by constructing scatter plots, PDFs and correlations between the variables by gender. Pink color denotes the information on female participants of the survey, and cyan color denotes the information on males. Number of females is approximately twice larger than the number of males. Most of the respondents are under age 35-40. The boxplots and PDFs that denote Global attitude toward statistics, Deep approach, Surface approach, Strategic approach and Total points look quite similar for both genders. Overall males have somewhat higher scores for attitude that females and vice versa for Surface approach. Surface approach scores are negatively correlated with all other variables.</p>
 <p>The correlations between variables are in general quite low, and non-significant in many cases. This also can be seen from the scatter plots, the relationships between variables seem mostly quite random. Surface approach scores are negatively correlated with all other variables, but are significant only for males when correlated with Deep approach and Global attitude toward statistics. On the other hand, variables Global attitude toward statistics and Total points are significantly positively correlated with each other for both males and females.</p>
 <pre class="r"><code># access the GGally and ggplot2 libraries
+#install.packages(&quot;ggplot2&quot;)
+#install.packages(&quot;dplyr&quot;)
+
 library(ggplot2)
 library(GGally)</code></pre>
 <pre><code>## Registered S3 method overwritten by &#39;GGally&#39;:

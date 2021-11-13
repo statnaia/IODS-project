@@ -20,6 +20,9 @@ The correlations between variables are in general quite low, and non-significant
 
 ```{r}
 # access the GGally and ggplot2 libraries
+#install.packages("ggplot2")
+#install.packages("dplyr")
+
 library(ggplot2)
 library(GGally)
 
