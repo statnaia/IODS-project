@@ -1,13 +1,73 @@
-# Insert chapter 2 title here
+# Chapter 2: Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
-
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+*Dataset: JYTOPKYS3*\
+- The dataset is an international survey of Approaches to Learning done by Kimmo Vehkalahti in 2014-2015\
+- The dataset learning2014 consist 166 rows and 7 variables.\
 
 ```{r}
-date()
+#reading the dataset
+learning2014 <- read.csv("D:/Desktop/Courses/Data Science/IODS-project/Data/learning2014.csv", sep=" ", header=TRUE)
+
+#checking the structure and dimensions of the dataset
+str(learning2014)
+dim(learning2014)
 ```
 
-Here we go again...
+First we explore the data by constructing scatter plots, PDFs and correlations between the variables by gender. Pink color denotes the information on female participants of the survey, and cyan color denotes the information on males. Number of females is approximately twice larger than the number of males. Most of the respondents are under age 35-40. The boxplots and PDFs that denote Global attitude toward statistics, Deep approach, Surface approach, Strategic approach and Total points look quite similar for both genders. Overall males have somewhat higher scores for attitude that females and vice versa for Surface approach. Surface approach scores are negatively correlated with all other variables.
+
+The correlations between variables are in general quite low, and non-significant in many cases. This also can be seen from the scatter plots, the relationships between variables seem mostly quite random. Surface approach scores are negatively correlated with all other variables, but are significant only for males when correlated with Deep approach and Global attitude toward statistics. On the other hand, variables Global attitude toward statistics and Total points are significantly positively correlated with each other for both males and females.
+
+
+```{r}
+# access the GGally and ggplot2 libraries
+library(ggplot2)
+library(GGally)
+
+# create a more advanced plot matrix with ggpairs()
+p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw the plot
+p
+```
+
+Having studied the relationships between variables, it seems that the Global attitude toward statistics might explain the variation in Total points the best. Nevertheless, the use of the two other variables: Strategic approach and Surface approach might improve the model. A summary of a multiple linear regression model is shown below. 
+
+
+```{r}
+# creating a multiple regression model with attitude, strategic learning, and surface learning as explanatory variables
+# target variable is Points
+my_model <- lm(Points ~ attitude + stra + surf, data = learning2014)
+
+# print out a summary of the model
+summary(my_model)
+```
+
+As the statistical significance is marked by stars (t value and Pr(>|t|) columns), Global attitude toward statistics is in fact significantly positively correlated with exam points, but the other two variables are not. The p-values for these two variables are greater than the .05 value, which is generally accepted to test the significance. Therefore, the null hypothesis is not rejected.
+
+Based on these results, I remove these two parameters and make a new model:
+
+```{r}
+#remove stra and surf and run model again
+my_model2 <- lm(Points ~ attitude, data = learning2014)
+
+# print out a summary of the model
+summary(my_model2)
+```
+
+The simple linear model performs better than the multimpe regression model in our case. The residuals for this model are slightly smaller than for the previous model, indicating a better model fit. The model fit is described the value of the Multiple R squared: 0.19, indicating that the model can explain 19 percent of the variance in our dependent variable. In the case of this simple linear regression, this means that differences in attitude explain about a fifth of the variance in exam points.
+
+From the "Residuals vs Fitted" plot we can see, that the relationship between the residuals and the fitted values is quite random, which indicates that the size of the errors is not dependent on the explanatory variable. In the "Normal Q-Q" plot we see that the errors are reasonably normally distributed, and thus fit the normality assumption, and the results in the "Residuals vs Leverage" plot imply, that no single observation has unusually high impact on the model. The model diagnostics show a reasonably good fit to the data.
+
+```{r}
+# draw diagnostic plots
+par(mfrow = c(2,2))
+plot(my_model2, which = c(1,2,5))
+```
+
+
+
+
+
+
+
+
