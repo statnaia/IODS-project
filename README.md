@@ -1,2 +1,2 @@
 # IODS-project
-Template for the IODS course
+GitHub project for Introduction to Open Data Science using R
