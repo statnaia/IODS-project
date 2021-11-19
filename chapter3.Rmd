@@ -1,13 +1,217 @@
-# Insert chapter 3 title here
+# Chapter 2: Logistic regression 
 
-*Describe the work you have done this week and summarize your learning.*
+## 1) Alcohol consumption dataset
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+The dataset is based on questionnaires on student achievement in secondary education in two Portuguese schools. The data attributes include student grades, demographic, social and school related features. 
+
+The data was combined from two datasets: the dataset that describes students performance in Mathematics and the dataset that describes students performance in the Portuguese language. The alcohol consumption by each student is measured with the variable "alc_use" and high alcohol consumption with the variable "high_use". If the alcohol consumption has a value more than 2, "high_use" of alcohol is True.
 
 ```{r}
-date()
+alc <- read.csv("./Data/alc.csv")
+colnames(alc)
 ```
 
-Here we go again...
+## 2) Relationships between alcohol consumption and other variables
+
+Here I study the relationships between high/low alcohol consumption and some of the other variables in the dataset. I choose to study the relationships between alcohol consumption (high_use) and such variables as age, famrel, higher, goout (going out with friends).
+
+My hypotheses for each of them are following:
+
+1. Older students are more likely to consume more alcohol.
+2. Having good (from 3 to 5) family relationships leads to lower alcohol consumption.
+3. Wish to get a higher education leads to lower alcohol consumption.
+4. Going out a lot may lead to drinking more alcohol.
+
+**Age**
+
+Age varies between 15-22 years for men and women, mean age is 16.5. Male students who have high alcohol consumption tend to be roughly one year older (mean age 17) than those who have lower alcohol consumption (mean age 16). The situation is vice versa for women. My hypothesis was partially correct, only for men.
+
+The barplot highlights increasing of alcohol consumption from age 15 to 17 for women and high consumption at ages 15-18 for men.
+
+```{r}
+library(dplyr); library(ggplot2)
+summary(alc$age)
+g1 <- ggplot(alc, aes(x = high_use, y = age, col = sex))
+g1 + geom_boxplot() + ylab("age") +ggtitle("Student age by high alcohol use and sex")
+
+g2 <- ggplot(data = alc, aes(x = age, fill=high_use))
+g2 + geom_bar() + facet_wrap("sex")
+```
+
+**Family realtionships**
+
+Quality of family relationships varies between 1-5, mean value is 4.
+It is clearly seen that the quality of relationship within family influences the amount of alcohol consumption. So my hypothesis was correct.
+From the barplot it can be seen that the family microclimate is somewhat more important for females. 
+
+```{r}
+summary(alc$famrel)
+g3 <- ggplot(alc, aes(x = high_use, y = famrel, col = sex))
+g3 + geom_boxplot() + ylab("Quality of relationship")+ggtitle("Family realtionships")
+g4 <- ggplot(data = alc, aes(x = famrel, fill=sex))
+g4 + geom_bar() + facet_wrap("high_use")
+```
+
+**Wish to take higher education**
+
+Dedicated students tend to consume less alcohol, so the hypothesis was partly right. Nevertheless, the amount of students consuming a lot of alcohol and wanting to enter universities at the same time is surprisingly high, especially for males. So, almost every student wants to get a higher education. Note: there are no females that consume a lot of alcohol and do not want to get higher education.   
+
+```{r}
+summary(alc$freetime)
+g7 <- ggplot(alc, aes(x = high_use, y = higher, col = sex))
+g7 + geom_boxplot() + ylab("higher education")+ggtitle("Student wants to take higher education")
+g8 <- ggplot(data = alc, aes(x = higher, fill=sex))
+g8 + geom_bar() + facet_wrap("high_use")
+```
+
+**Going out with friends**
+
+High usage drinkers are more likely to go out than low usage for both genders. This observation is more prominent for males. So, the hypothesis was right.
+
+```{r}
+summary(alc$freetime)
+g7 <- ggplot(alc, aes(x = high_use, y = goout, col = sex))
+g7 + geom_boxplot() + ylab("going out")+ggtitle("Student goes out with friends")
+g8 <- ggplot(data = alc, aes(x = goout, fill=sex))
+g8 + geom_bar() + facet_wrap("high_use")
+```
+
+## 3) Logistic regression
+
+```{r}
+#Fitting a logistic regression model 
+model1 <- glm(high_use ~ age + famrel + higher + goout, data = alc, family = "binomial")
+#Printing out a summary of the model
+summary(model1)
+```
+
+The logistic regression shows the statistical relationship between the explanatory variables and the binary high/low alcohol consumption variable. 
+
+The summary of the model shows that age and with to take higher education are not statistically significant. But family relationships and going out with friend are significant. Thus, having bad family relationships and going out a lot with friends all increase alcohol consumption.
+
+The factor variable in the model (higher) here shows how with to have higher education affects alcohol consumption. It means a Wald test was performed to test whether the pairwise difference between the coefficients of males and females is different from zero or not. Here it is not significantly different, because practically all students want a higher degree as we saw earlier.
+
+**Odds ratios (ORs) and confidence intervals (CIs)**
+
+```{r}
+OR <- coef(model1) %>% exp
+CI <- confint(model1) %>% exp
+#Printing out the odds ratios with their confidence intervals
+cbind(OR, CI)
+```
+The OR for age and higher education are not significant because the confidence intervals contain number 1. Otherwise good family relationship is associated with decreased alcohol use. 
+
+The odds of high alcohol consumption for significant variables:
+1. students with a good family situation are less likely to drink a lot (as OR<1 -> Exposure associated with lower odds of outcome)  
+2. students who spend a lot of time with their friends is from 1.7 to 2.8 times higher for students who do not (as OR>1 -> Exposure associated with higher odds of outcome)
+
+
+# 4) Predictive power of the model
+
+```{r}
+#I will explore the predictive power of the model by using only the variables with a statistically significant relationship with alcohol consumption. 
+
+#Predicting the probability of high_use
+probabilities <- predict(model1, type = "response")
+
+#Adding the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = probability > 0.5)
+
+```
+
+```{r}
+# see the last ten original classes, predicted probabilities, and class predictions
+select(alc, failures, absences, sex, high_use, probability, prediction) %>% tail(10)  
+```
+
+```{r}
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction)
+
+# graphic visualizing of both the actual values and the predictions
+g <- ggplot(alc, aes(x = probability, y = high_use,col=prediction))
+g + geom_point()
+
+```
+
+The model does not do a perfect job with predicting alcohol consumption, as it predicts wrongly approximately every 4th time.
+Next we compute the total proportion of inaccurately classified individuals (the training error):
+
+```{r}
+#Tabulating the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+```
+
+As can be seen from plot and from the prediction table, category FALSE compose 70% of the high_use (0.7) and TRUE 30% (0.3). 
+Nevertheless, the model still does a better job than simple guessing.
+
+**Loss function**
+
+```{r}
+# define a loss function (average prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+# the average number of wrong predictions in the alc data
+loss_func(class = alc$high_use, prob = 0)
+loss_func(class = alc$high_use, prob = 1)
+loss_func(class = alc$high_use, prob = alc$probability)
+```
+
+The results are in agreement with the previous analysis. The output numbers denote the average number of wrong predictions in the training data. If I define the probability of high_use as zero for each individual, it results in resulting proportion =0.3. The result for probability of high_use=1 is complementary to that. The definition of probability as to the model output gives 0.26 error, which is better than in the first case. 
+
+**Bonus exercise**
+
+10-fold cross-validation on the model  
+
+```{r}
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = model1, K = 10)
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+With a prediction error of 0.27 with the test set, my model performs slightly worse than the model introduced in the DataCamp exercise (with an error of ~0.26). Below are two models that performs better.
+
+
+**Super - Bonus exercise**
+
+First make a model with a lot of predictors
+
+```{r}
+model2 <- glm(high_use ~ school + sex + age + Pstatus + Medu + Fedu + Mjob + Fjob + reason + nursery + internet + guardian + traveltime + studytime + failures + schoolsup + famsup + paid + activities + higher + romantic + famrel + freetime + goout + health + absences + G1 + G2+ G3, data = alc, family = "binomial")
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = model2, K = 10)
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+Using a model with many predictors is not useful since the error rate is higher than for the model with less predictors.
+
+Next model:
+```{r}
+my_model5 <- glm(high_use ~ sex + age + internet + guardian + traveltime + studytime + failures + schoolsup + famsup + paid + activities + higher + romantic + famrel + freetime + goout + health + absences + G1 + G2+ G3, data = alc, family = "binomial")
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = my_model5, K = 10)
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+The error rate gets smaller when reducing the predictors.
+
+
+Next model:
+```{r}
+my_model6 <- glm(high_use ~ studytime + famsup + activities + goout + absences, data = alc, family = "binomial")
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = my_model6, K = 10)
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+The error rate gets smaller when reducing the predictors, especially getting rid of those that have no correlation to high_usage.
+
+
+
+
+
+
