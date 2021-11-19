@@ -300,9 +300,8 @@ cbind(OR, CI)</code></pre>
 <p>The odds of high alcohol consumption for significant variables: 1. students with a good family situation are less likely to drink a lot (as OR&lt;1 -&gt; Exposure associated with lower odds of outcome)<br />
 2. students who spend a lot of time with their friends is from 1.7 to 2.8 times higher for students who do not (as OR&gt;1 -&gt; Exposure associated with higher odds of outcome)</p>
 </div>
-</div>
-<div id="predictive-power-of-the-model" class="section level1">
-<h1>4) Predictive power of the model</h1>
+<div id="predictive-power-of-the-model" class="section level2">
+<h2>4) Predictive power of the model</h2>
 <pre class="r"><code>#I will explore the predictive power of the model by using only the variables with a statistically significant relationship with alcohol consumption. 
 
 #Predicting the probability of high_use
@@ -366,7 +365,7 @@ library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = model1, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2621622</code></pre>
+<pre><code>## [1] 0.2648649</code></pre>
 <p>With a prediction error of 0.27 with the test set, my model performs slightly worse than the model introduced in the DataCamp exercise (with an error of ~0.26). Below are two models that performs better.</p>
 <p><strong>Super - Bonus exercise</strong></p>
 <p>First make a model with a lot of predictors</p>
@@ -374,22 +373,23 @@ cv$delta[1]</code></pre>
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = model2, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2648649</code></pre>
+<pre><code>## [1] 0.2945946</code></pre>
 <p>Using a model with many predictors is not useful since the error rate is higher than for the model with less predictors.</p>
 <p>Next model:</p>
 <pre class="r"><code>my_model5 &lt;- glm(high_use ~ sex + age + internet + guardian + traveltime + studytime + failures + schoolsup + famsup + paid + activities + higher + romantic + famrel + freetime + goout + health + absences + G1 + G2+ G3, data = alc, family = &quot;binomial&quot;)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = my_model5, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2405405</code></pre>
+<pre><code>## [1] 0.2675676</code></pre>
 <p>The error rate gets smaller when reducing the predictors.</p>
 <p>Next model:</p>
 <pre class="r"><code>my_model6 &lt;- glm(high_use ~ studytime + famsup + activities + goout + absences, data = alc, family = &quot;binomial&quot;)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = my_model6, K = 10)
 # average number of wrong predictions in the cross validation
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2405405</code></pre>
+<pre><code>## [1] 0.2378378</code></pre>
 <p>The error rate gets smaller when reducing the predictors, especially getting rid of those that have no correlation to high_usage.</p>
+</div>
 </div>
 
 

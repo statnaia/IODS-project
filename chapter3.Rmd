@@ -106,7 +106,7 @@ The odds of high alcohol consumption for significant variables:
 2. students who spend a lot of time with their friends is from 1.7 to 2.8 times higher for students who do not (as OR>1 -> Exposure associated with higher odds of outcome)
 
 
-# 4) Predictive power of the model
+## 4) Predictive power of the model
 
 ```{r}
 #I will explore the predictive power of the model by using only the variables with a statistically significant relationship with alcohol consumption. 
