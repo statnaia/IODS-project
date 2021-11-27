@@ -1,6 +1,6 @@
-# Chapter 2: Logistic regression 
+# Logistic regression 
 
-## 1) Alcohol consumption dataset
+## Alcohol consumption dataset
 
 The dataset is based on questionnaires on student achievement in secondary education in two Portuguese schools. The data attributes include student grades, demographic, social and school related features. 
 
@@ -11,7 +11,7 @@ alc <- read.csv("./Data/alc.csv")
 colnames(alc)
 ```
 
-## 2) Relationships between alcohol consumption and other variables
+## Relationships between alcohol consumption and other variables
 
 Here I study the relationships between high/low alcohol consumption and some of the other variables in the dataset. I choose to study the relationships between alcohol consumption (high_use) and such variables as age, famrel, higher, goout (going out with friends).
 
@@ -76,7 +76,7 @@ g8 <- ggplot(data = alc, aes(x = goout, fill=sex))
 g8 + geom_bar() + facet_wrap("high_use")
 ```
 
-## 3) Logistic regression
+## Logistic regression
 
 ```{r}
 #Fitting a logistic regression model 
@@ -106,7 +106,7 @@ The odds of high alcohol consumption for significant variables:
 2. students who spend a lot of time with their friends is from 1.7 to 2.8 times higher for students who do not (as OR>1 -> Exposure associated with higher odds of outcome)
 
 
-## 4) Predictive power of the model
+## Predictive power of the model
 
 ```{r}
 #I will explore the predictive power of the model by using only the variables with a statistically significant relationship with alcohol consumption. 

@@ -1,4 +1,4 @@
-# Chapter 2: Regression and model validation
+# Regression and model validation
 
 *Dataset: JYTOPKYS3*\
 - The dataset is an international survey of Approaches to Learning done by Kimmo Vehkalahti in 2014-2015\
