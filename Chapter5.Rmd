@@ -1,13 +1,270 @@
-# Insert chapter 4 title here
+# Dimensionality reduction techniques
 
-*Describe the work you have done this week and summarize your learning.*
-
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
-
+The Human Development Index (HDI) dataset originates from the United Nations Development Programme.\
+The Human Development Index (HDI) is a summary measure of average achievement in key dimensions of human development: a long and healthy life, being knowledgeable and have a decent standard of living.\
+The HDI is the geometric mean of normalized indices for each of the three dimensions.\
+ 
+"Country" = Country name \
+"GNI" = Gross National Income per capita \
+"LifeExp" = Life expectancy at birth \
+"EdExp" = Expected years of schooling \
+"MatMortality" = Maternal mortality ratio \
+"TeenBirthRate" = Adolescent birth rate \
+"ParlPerc" = Percent.Representation.in.Parliament \
+"edu_ratio" = Edu2_f / Edu2_m \
+"lab_ratio" = Labo2_f / Labo2_m \
+ 
 ```{r}
-date()
+human <- read.csv("./data/human.csv", sep=",", dec = ".", row.names = 1)
+summary (human)
 ```
 
-Here we go again...
+## Graphical overview of the data
+
+
+```{r}
+library(GGally)
+library(ggplot2)
+library(dplyr)
+
+pairs <- ggpairs(human, mapping = aes(), lower = list(combo = wrap("facethist", bins = 20)))
+pairs
+``` 
+ 
+In the pairs plots we see that some of the variables are approximately normally distributed (e.g. EdExp: expected years of schooling), while the distribution of other variables is somewhat skewed. Two of them, GNI per capita and maternal mortality are significantly skewed to the right, meaning that most of the values in these variables are low. The ratio of females and males with at least secondary education, expected years of schooling, life expectancy at birth, and Gross National Income per capita are all positively correlated with each other, and negatively correlated with maternal mortality ratio and adolescent birth rate. 
+
+
+```{r} 
+#library(tidyverse)
+library(corrplot)
+# compute the correlation matrix and visualize it with corrplot
+cor(human) %>% corrplot(type = "upper")
+``` 
+
+The correlations can be seen more clearly on a corrplot chart. 
+
+Some of the variables in the data are strongly positively or negatively correlated: for instance, maternal mortality has a strong positive correlation with adolescent women giving birth. On the other hand, maternal mortality is strongly negatively correlated with expected education. \
+Educational expectations and actualities for females are negatively correlated with maternal mortality and adolescent birth. \
+Meanwhile, the ratio of females and males in the labour force and percentage of female representatives in parliament are not strongly correlated with anything.
+As expected, Gross National income has a positive correlation to expected length of schooling, life expectancy and ratio of women in higher education. \
+
+Summary of correlations: \
+A strong positive correlation can be seen between TeenBirthRate and MatMortality, EdExp and edu_ratio, EdExp and LifeExp, LifeExp and edu_ratio, LifeExp and EdExp.\
+A strong negative correlation can be seen between TeenBirthRate and edu_ratio, TeenBirthRate and LifeExp, TeenBirthRate and EdExp, MatMortality and edu_ratio, MatMortality and LifeExp, MatMortality and EdExp.\
+
+We can see that it’s a highly intercorrelated dataset, which is perfect for the purposes of the Principal Component Analysis.
+
+## PCA on non-standardized data
+
+```{r fig.width=10, fig.height=10}
+pca_human <- prcomp(human)
+pca_human
+
+# rounded percentages of variance captured by each PC
+s <- summary(pca_human)
+pca_pr <- round(100*s$importance[2,], digits = 1)
+
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.6, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2], main = (title = "PCA_non-scaled"))
+
+```
+
+We can immediately see from the summary of the model and the plot that the first component takes on 100% of the variance. This is due to the difference in ranges of the variables. The GNI per capita is represented by the longest axis, clearly has the biggest standard deviation. All the arrows are sitting on the same axis as if they are fully correlated.
+
+Based on the results below, principal component analysis doesn't seem to work with unstandardized data.
+
+## PCA on standardized data
+
+Now repeat the analysis, but first standardize data
+
+```{r fig.width=10, fig.height=10}
+# standardize the variables
+human_std <- scale(human)
+summary(human_std)
+
+pca_human_std <- prcomp(human_std)
+pca_human_std
+
+# rounded percentages of variance captured by each PC
+s_st <- summary(pca_human_std)
+pca_pr_st <- round(100*s_st$importance[2,], digits = 1)
+
+# create object pc_lab to be used as axis labels
+pc_lab_st <- paste0(names(pca_pr_st), " (", pca_pr_st, "%)")
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human_std, choices = 1:2, cex = c(0.6, 1), col = c("grey40", "green"), xlab = pc_lab_st[1], ylab = pc_lab_st[2], main = (title = "PCA_scaled"))
+```
+
+The analysis of the standardized data looks much more reliable. The first component takes 53.6% of the variance, and the second component - 16.2% of the variance. The two components together account for 69.8% of the variance, this number is high enough to use these two first components for the analysis. The countries are distibured throughout the bidimensional space defined by the two principal components. The plot visualizes the relationships of the original features with each other, and with the principal components. \
+Arrows pointing to the same direction are positive correlation and the closer they are the stronger the correlation is. Arrows pointing to opposite directions identify negative correlation. The angle between a variable and a PC axis can be interpret as the correlation between the two. The length of the arrows are proportional to the standard deviations of the variables. \
+
+Same correlations as described earlier can be seen here.\
+The angle between the feature and a PC axis can be interpreted as the correlation between the two. Here, lab_ratio and ParlPerc (percent representation in Parliament) are contributing to the PC2. The ratio of females and males with at least secondary education, expeted years of schooling, life expectancy at birth, Gross National Income per capita, maternal mortality ratio and adolescent birth rate seem to contribute to the PC1. \
+
+Lab_ratio (ratio of labour force participation by sex) and ParlPerc (percent representation in Parliament) are strongly positively correlated. The same is true e.g. for MatMortality (maternal mortality ratio) and TeenBirthRate (adolescent birth rate). \
+
+The variance (proportional to the length of the arrows) seems more or less of the same magnitude for different variables.\
+
+**Interpreting the first two principal component dimensions**
+
+Based on these results and how the countries are situated in the biplot, the first principal component seems to capture mostly the wealth of the country. I would suggest to call it 'wealth', as because it collects indicators of health, social protection, and economic growth. The variables falling into PC1 describe life expectancy at birth, GNI per capita, maternal maternity ratio, adolescent birth rate, expected years of education, and population with secondary education ratio. All of these parameters support the welfare of a country. \
+
+The second component PC2 captures some aspects of gender equality, since it is dealing with workforce gender ratio and the participation rate of women in Parliament, so I suggest to call it 'equality'.
+
+## Multiple correspondence analysis
+
+**Dataset description**
+
+The Tea dataset, available from the FactoMineR package is described here <https://rdrr.io/cran/FactoMineR/man/tea.html>. The data concern a questionnaire on tea. They asked to 300 individuals how they drink tea (18 questions), what are their product's perception (12 questions) and some personal details (4 questions). This is a data frame with 300 rows and 36 columns. Rows represent the individuals, columns represent the different questions. The first 18 questions are active ones, the 19th is a supplementary quantitative variable (the age) and the last variables are supplementary categorical variables.
+
+
+```{r}
+library(tidyr)
+library(FactoMineR)
+
+data(tea) 
+
+# dimensions of dataset
+dim(tea) #[1] 300  36
+
+# structure of dataset
+str(tea)
+
+# summanry of variables
+summary(tea)
+
+```
+
+The “tea” dataset contains 300 observations and 36 variables describing various habits to drink tea, most of which are strings. Some follow a bimodal distributions, some not.
+
+The dataframe is too big for a meaningful MCA analysis, so here I will take only a part of it for the analysis. 
+
+```{r}
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+
+tea_time <- dplyr::select(tea, one_of(keep_columns))
+
+str(tea_time)
+
+#make a bar plot of this smaller data set
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+
+Graphs presented above show that:
+- people prefer tea in tea bag form
+- people prefer to drink tea alone 
+- people mostly drink tea outside of the lunch time
+- there is not so big difference between people who drink tea with sugar and without
+- people prefer Earl Grey
+- people prefer to drink in a chain store rather than in a tea shop
+
+**MCA analysis**
+
+MCA is mainly used for categorical variables as we have in the tea dataset.
+
+```{r}
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+```
+
+Analysis of the summary output:
+
+**Eigenvalues**: the variances and the percentages of variances retained by each dimension  
+- there are 11 dimensions  
+- there is a decending order of the explained variance (in %) by each dimensions. For e.g Dim1 has explained up to 15.2 % of the variance while Dim11 explained only 3.4% of the variance. 
+- only four first dimensions retains >10% of the variance, accumulating 51.8% of the variance. 
+
+**Individuals**: only first 10 individuals (rows) are shown  
+- summary result showed the contribution (ctr) of each individual on producing dimensions. And we can say that Dim1 and Dim2 are mainly influenced by individual 4 and 9 respectively.
+- cos2 represent the quality of individual on dimensions. If cos2 is closer to 1 then we can say that individual is well projected to the dimensions and in our case individual 4 and 9 are well representing the Dim1 and Dim2 respectively.  
+
+**Categories** table shows:  
+- the coordinates of the variable categories  
+- the contribution (%)  
+- the cos2 (squared correlations)  
+- V-test shows the significance of active categorical variables with respect to zero. If v-test is between -2 to 2 then categories as coordinate in not significantly different than zero, if v-test is >2 if categories is significantly greater than zero and is < -2 if categories is significantly less than zero. From this, we can say that for Dim1 black, green, lemon, tea bag+unpackaged, and unpackaged categories are greater than zero. Earl Grey, milk, tea bag are less than zero. Whereas, alone and other do not significantly differ from zero.
+- we can see that strongest effect seem to be on the variable package where v.test values are more than 12.  
+
+**Categorical variables**: 
+- the influence of each categorical variable in dimensions     
+- values close to 1 indicates a strong link with variable and dimension  
+- in this table the highest value 0.708 is for "how" on Dim.1 (var 'how' describes packaging of the tea). Dim 1 is also strongly influenced by variable "where" (0.702). Dim.2 is influensed mostly by the same variables as well.
+
+Graphical output:
+
+```{r}
+# visualize MCA
+plot(mca, invisible=c("ind"), habillage = "quali", graph.type = "classic")
+```
+
+Analysis of the biplot: 
+
+The plot shows individual variable categories in relation to dimensions 1 and 2. The first dimension accounts for 15.2 % and the second dimension for 14.2 % of the total inertia. The first dimension seems to be related to the packaging of the tea and where it is bought. On one end there are such variables as tea bags and tea from chain stores and on the other end there is unpackacked tea and tea shops. The second dimension seems to describe the tea type and tea supplements. 
+Categories of the same variable are colored with the same color. The distance between the variable categories gives a measure of their similarity. For example in the bottom right corner we see that people who use unpacked tea buy their tea from a tea shop rather than chain store.
+
+**Other MCA plotting options**
+
+Explore options to present MCA output. Control automatically the color of individuals. 
+
+Here I reduced the font sizes by adding cex command and also gave the command to plot the 10 most contributing individual to dimensions. I plotted the quality of individuals (cos2 greater than 0.1).
+
+```{r fig.width=10, fig.height=10}
+
+plot(mca, invisible=c("quali.sup"), cex=.8, selectMod = "cos2 0.1", select = "contrib 10") 
+```
+
+The following biplot represents the individuals by their cos2 values.
+
+```{r fig.width=10, fig.height=10}
+library("factoextra")
+fviz_mca_ind(mca, col.ind = "cos2", repel = TRUE)
+```
+The last biplot highlight groups of tea consumption during lunch time and outside of it. I also added concentration ellipses based on the individual groups.
+
+```{r fig.width=10, fig.height=10}
+if (FALSE) {
+# You can also control the transparency 
+# of the color by the cos2
+fviz_mca_ind(mca, alpha.ind="cos2")
+}
+
+# Color individuals by groups, add concentration ellipses
+# Remove labels: label = "none".
+grp <- as.factor(tea_time[, "lunch"])
+p <- fviz_mca_ind(mca, label="none", habillage=grp,
+       addEllipses=TRUE, ellipse.level=0.95)
+print(p)
+```
+
+Different representation of MCA output allows to highlight specific features of the dataset as it requires for the analysis.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
