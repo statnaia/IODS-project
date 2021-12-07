@@ -1,0 +1,380 @@
+# Analysis of longitudinal data
+
+## PART 1: Analysis of the RATS dataset 
+**Analysis follows Chapter 8 from Vehkalahti, Kimmo & Everitt, Brian S. (2019). Multivariate Analysis for the Behavioral Sciences , Second Edition. Chapman and Hall/CRC, Boca Raton, Florida, USA. **
+
+The dataset contains information on the body weight (in grams) of three groups of rats that were put on different diets. The body weights were recorded on eight different times.
+The dataset was converted to the long form during the DataWrangling part.
+
+Access the packages
+```{r}
+# Access the packages
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lme4)
+```
+
+
+Load the RATS dataset in long form and check the structure, dimensions and summary of the dataset.
+
+```{r}
+RATSL <- read.csv("./Data/RATSL.csv")
+
+str(RATSL)
+dim(RATSL)
+summary(RATSL)
+
+```
+
+ID and Group variables need to be converted to factor again.
+
+```{r}
+RATSL$ID <- factor(RATSL$ID)
+RATSL$Group <- factor(RATSL$Group)
+glimpse(RATSL)
+```
+
+**Graphical exploration of the RATS dataset**
+
+I plot the Weight values for all rats, differentiating between the diet experiment groups into which the rats have been assigned.
+
+```{r}
+# Draw the plot
+ggplot(RATSL, aes(x = Time, y = Weight, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(RATSL$Weight), max(RATSL$Weight)))
+```
+
+Graphical exploration helps to expose patterns in the data, particularly when these are unexpected. In the graph above time is on the x-axis and body weight is on the y-axis, each line of the graph is the weight of an individual rat. This simple graph makes a number of features of the data readily apparent. In particular, the body weight of the rats generally increases during the study. Also, the graph shows us that rats in the group 2 and 3 had higher weight from the start and gained more weight during study that rats in the group 1.
+Rats in the group 2 and 3 have more variety in the starting weight and their weight at the end of the experiment.
+Inside the all of the groups there are rats which gained either more or less weight during the experiment than the others.
+
+**Standardize data**
+
+To highlight the tracking phenomenon, an important effect that rats with higher body weight at the beginning tend to have higher weight throughout the study.
+The tracking phenomenon can be seen more clearly in a plot of the standardized values of each observation, i.e., the values obtained by subtracting the relevant occasion mean from the original observation and then dividing by the corresponding visit standard deviation.
+
+standardized(x) = ( x - mean(x) ) / std (x)
+
+```{r}
+RATSL <- RATSL %>%
+  group_by(Time) %>%
+  mutate(stdWeight = (Weight - mean(Weight))/sd(Weight) ) %>%
+  ungroup()
+```
+
+```{r}
+glimpse(RATSL)
+```
+New variable stdWeight is added, it contains the standardized weight.
+Now I plot again the dataset, but now with stanadardized data.
+
+```{r}
+ggplot(RATSL, aes(x = Time, y = stdWeight, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  scale_y_continuous(name = "standardized Weight")
+```
+
+Interestingly, when weight is standardized no individuals seem to show significant change of weight over time. Especially in group 3 the rats seem lo lose weight during the study rather than gaining weight, as opposed to the previous graph, which gave the impression that the rats are getting heavier.
+
+Next, I plot graphs showing average (mean) profiles for each group along with indication of the variation of the observations at each time point, in this case the standard error of mean.
+
+se = std(x) / sqrt(N)
+
+```{r message=FALSE, warning=FALSE}
+#Number of days, baseline (day 1) included
+n <- RATSL$Time %>% unique() %>% length()
+
+#Summary data with mean and standard error of Weight by treatment and week 
+RATSS <- RATSL %>%
+  group_by(Group, Time) %>%
+  summarise(mean = mean(Weight), se = (sd(Weight)/sqrt(n)) ) %>%
+  ungroup()
+
+#Plotting the mean profiles
+ggplot(RATSS, aes(x = Time, y = mean, linetype = Group, shape = Group, color = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1,2,3)) +
+  geom_point(size=3) +
+  scale_shape_manual(values = c(1,2,3)) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, linetype="1"), width=0.3) +
+  theme(legend.position = c(0.8,0.8,0.8)) + theme(legend.position = "top") +
+  scale_y_continuous(name = "Mean(Weight) +/- SE(Weight)")
+```
+
+The plot highlights the difference in weight between group1 and groups 2 and 3. Although, groups 2 and 3 are more similar to each other comprising heavier rats than in the first group, they are significantly different as well. Group 2 has highest variation, shown as standard errors of the means here. The differences between the groups seem to be outside the standard error in all time points for all three groups which suggests there might be statistically significant difference between the groups in respect to the mean weight values.
+
+**Applying the Summary Measure Approach**
+
+The summary measure for this analysis will be time mean. First I calculate this measure and then look at boxplots of the measure for each group. 
+
+```{r}
+# Create a summary data by group and subject with mean as the summary variable (ignoring baseline week 0).
+RATSLSS <- RATSL %>%
+  filter(Time > 1) %>%
+  group_by(Group, ID) %>%
+  summarise(mean=mean(Weight) ) %>%
+  ungroup()
+RATSL
+# Glimpse the data
+glimpse(RATSLSS)
+
+# Draw a boxplot of the mean versus treatment
+ggplot(RATSLSS, aes(x=Group, y=mean, fill=Group)) +
+  geom_boxplot() +
+  stat_summary(fun="mean", geom="point", shape=23, size=4, fill="white") +
+  scale_y_continuous(name="mean(Weight), weeks 8-64")
+
+# Create a new data by filtering the outlier and adjust the ggplot code the draw the plot again with the new data
+RATSLSS2 <- filter(RATSLSS, (Group==1 & mean > 250)|(Group==2 & mean < 550)| (Group==3 & mean > 500))
+RATSLSS2
+
+# Draw a boxplot of the mean versus treatment
+ggplot(RATSLSS2, aes(x=Group, y=mean, fill=Group)) +
+  geom_boxplot() +
+  stat_summary(fun="mean", geom="point", shape=23, size=4, fill="white") +
+  scale_y_continuous(name="mean(Weight), weeks 8-64")
+```
+
+The mean summary measure is more variable in the second group and its distribution in this group is somewhat skew. The distribution of the group 3 is skew as well. Every group has an outlier, which might bias the conclusions from further comparisons of the groups, so I removed them from the data.
+
+**T-test and ANOVA**
+
+I will calculate a t-test to assess any difference between the groups, and also calculate a confidence interval for this difference. I will use the data without outliers created in the previous step. The t-test confirms the lack of any evidence for a group difference. Also the 95% confidence interval is wide and includes the zero, allowing for similar conclusions to be made.
+
+I will calculate t-test between groups 2 and 3, as they are closer to each other.
+
+```{r}
+# filter groups 2 and 3
+RATSLSS23 <- filter(RATSLSS2,(Group==2| Group==3))
+RATSLSS23$Group <- factor(RATSLSS23$Group)
+
+#structure 
+str(RATSLSS23)
+
+#t-test
+t.test(mean ~ Group, data = RATSLSS23, var.equal = TRUE)
+```
+
+t-test statistic value -18.24, degrees of freedom 4, p-value is the significance level of the t-test. 95% confidence interval for Group 2 is -98.94 and for Group 3 is -72.79. The confidence interval is narrow and does not cross zero. Mean in group 2 is 452.40 and in group 3 538.27. The greater the magnitude of T, the greater the evidence against the null hypothesis. The lower the p-value, the greater the statistical significance of the observed difference. Null hypothesis can be rejected.
+
+Now I fit the linear model with the mean as the response. First, I will add the baseline (day 1) as a new variable to the summary data. This might be useful because baseline measurements in a longitudinal study like this are often correlated with the summary measure. Using the baseline weight here as a covariate might improve the precision of the model.
+
+```{r}
+#Load original data for creating baseline
+RATS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt",
+                   sep  = "\t", header = T)
+
+#Adding the baseline
+RATSLSS2 <- RATSLSS %>%
+  mutate(baseline = RATS$WD1)
+
+#Fitting the linear model with the mean as the response 
+fit <- lm(mean ~ baseline + Group, data = RATSLSS2)
+
+#Checking the summary statistics for this model
+summary(fit)
+
+#Computing the analysis of variance (ANOVA) table for the fitted model
+anova(fit)
+```
+
+ANOVA test hypotheses:
+
+Null hypothesis: the means of the different groups are the same 
+Alternative hypothesis: At least one sample mean is not equal to the others.
+
+The ANOVA result shows that baseline weight does have a very significant effect on the mean weight of rats in this study.  Therefore, adding the baseline weight as a covariate definitely helped construct a better model to explain the data.
+
+The Analysis of Variance Table first lists the independent variables being tested in the model, in this example it is Group. All of the variation that is not explained by the independent variables is called residual variance and shown in Residuals line on the summary. The Df column displays the degrees of freedom for the independent variable Group to be 2 (the number of levels in the variable minus 1). The Sum Sq column displays the sum of squares, the total variation between the group means and the overall mean. The Mean Sq column is the mean of the sum of squares. It is calculated by dividing the sum of squares by the degrees of freedom for each parameter. The F-value is the test statistic from the F test. This is the mean square of each independent variable divided by the mean square of the residuals. The larger the F value, the more likely it is that the variation caused by the independent variable is real and not due to chance. The Pr(>F) is the p-value of the F-statistic. It shows how likely it is that the F-value calculated from the test would have occurred if the null hypothesis of no difference among group means were true. The p-value is very low (p < 0.001) so we can say that the Group has a real impact. Null hypothesis can be rejected.
+
+## PART 2: Analysis of the BPRSL dataset 
+**Analysis follows Chapter 9 from Vehkalahti, Kimmo & Everitt, Brian S. (2019). Multivariate Analysis for the Behavioral Sciences , Second Edition. Chapman and Hall/CRC, Boca Raton, Florida, USA. **
+
+BPRSL dataset is a longitudinal data set, consisting of 40 study subjects who were randomly assigned to two treatment groups, and rated on the “brief psychiatric rating scale” (BPRS) before and during the treatment. The treatment lasted eight weeks. The BPRS is used to evaluate patients who are suspected to have schizophrenia. A high score indicates severe symptoms, such hostility, suspiciousness and hallucinations.
+
+Load the BPRSL dataset in long form and check the structure, dimensions and summary of the dataset.
+
+```{r}
+BPRSL <- read.csv("./Data/BPRSL.csv")
+
+str(BPRSL)
+dim(BPRSL)
+summary(BPRSL)
+
+```
+
+
+```{r}
+# Factor treatment & subject
+BPRSL$treatment <- factor(BPRSL$treatment)
+BPRSL$subject <- factor(BPRSL$subject)
+
+glimpse (BPRSL)
+```
+Plot of bprs against weeks for bprs data, ignoring the repeated-measures structure of the data but identifying the group to which each observation belongs.
+
+```{r}
+ggplot(BPRSL, aes(x = week, y = bprs, group = subject)) +
+      geom_text(aes(label = treatment, color = treatment)) +
+      scale_x_continuous(name = "BPRS", breaks = seq(0, 8, 1)) +
+      scale_y_continuous(name = "Weight (grams)") + 
+      theme_light() +  
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+```
+
+
+
+```{r}
+#Plotting the BPRSL data
+ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(name = "BPRS", limits = c(min(BPRSL$bprs), max(BPRSL$bprs))) +
+  scale_x_continuous(name = "Week", limits = c(min(BPRSL$week), max(BPRSL$week)))
+
+# this plot is for later comparison with the fitted values
+plot1 <- ggplot(BPRSL, aes(x = week, y = bprs, group=interaction(subject, treatment))) +
+        geom_line(aes(color=treatment, linetype=treatment)) +
+        scale_x_continuous(name = "weeks", breaks = seq(0, 8, 4)) +
+        scale_y_continuous(name = "bprs") +
+        theme(legend.position = "top")
+
+```
+
+Each line in the plot is an individual study subject (one of the 40 men in the study). This seems to show that the BPRS value decreased for most individuals during the study. From this plot alone it is not clear to me if there is any difference between the treatment groups.
+
+Next I will plot the scatterplot matrix of repeated measures in bprs data.
+
+```{r fig.width=10, fig.height=10}
+BPRS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/BPRS.txt", header = T)
+pairs(BPRS[,c(-1,-2)], cex = 0.7)
+```
+
+Next, I will continue to ignore that the data set consists of repeatedly measured individuals, and fit a multiple linear regression model with bprs as the response, and week & treatment as the explanatory variables.
+
+```{r}
+#Creating a regression model
+BPRS_reg <- lm(bprs ~ week + treatment, data = BPRSL)
+
+#Printing out a summary of the model
+summary(BPRS_reg)
+```
+
+The t-value measures the size of the difference relative to the variation, so the bigger the number the greater the evidence against the null hypothesis. p-value (Pr) is less than 0.05 for both week and treatment2. Based on the results, null hypotheses can be rejected for week. But it cannot be rejected for treatment2. Residual Standard Error: Standard deviation of residuals / errors of the regression model. Multiple R-Squared (0.19): Percent of the variance of exam intact after subtracting the error of the model. Adjusted R-Squared (0.18): how well the model fits the data, i.e. the percentage of the dependent variable variation that the linear model explains (ranging between 0 and 1). The R-squared is quite low.
+
+Next, let’s see a random intercept model that allows the linear regression fit for each study subject to differ in intercept, compared to other subjects.
+
+```{r}
+#Creating a random intercept model
+BPRS_ref <- lmer(bprs ~ week + treatment + (1 | subject), data = BPRSL, REML = FALSE)
+
+#Summary of the model
+summary(BPRS_ref)
+```
+
+The Akaike Information Criterion (AIC) is a method for scoring and selecting a model: the smaller the better. The value or AIC is 2748.7. The Bayesian Information Criterion (BIC) is another method for scoring and selecting a model: the smaller the better. The value for BIC is 2768.1. Log-Likelihood (logLik)
+
+The average bprs is 46.45, a week lowers it by 2.27, and treatment2 by 0.28.
+
+T-value is now bigger for week than it was before.
+
+Next, let’s see a random intercept and random slope model. Fitting one allows the linear regression fits for each individual to differ in intercept but also in slope. This way we can account for individual differences in the study subjects’ BPRS development, and also the effect of time.
+
+```{r}
+#Creating a random intercept and random slope model
+BPRS_ref1 <- lmer(bprs ~ week + treatment + (week | subject), data = BPRSL, REML = FALSE)
+
+#Summary of the model
+summary(BPRS_ref1)
+
+#ANOVA test on this and the previous model
+anova(BPRS_ref1, BPRS_ref)
+```
+
+The Random Intercept Model:BPRS_ref Random Intercept and Random Slope Model:BPRS_ref1 Two-way ANOVA test hypotheses: BPRS_ref1 is slightly better. Significance is low. Null hypothesis can be rejected. The ANOVA test shows that the new model is significantly better than the previous one.
+
+Finally, let’s see if there is an interaction between treatment and time, that should be taken into account.
+
+```{r}
+#Creating a random intercept and random slope model with the interaction
+BPRS_ref2 <- lmer(bprs ~ week * treatment + (week | subject), data = BPRSL, REML = FALSE)
+
+#Summary of the model
+summary(BPRS_ref2)
+
+#ANOVA test on this and the best model so far
+anova(BPRS_ref2, BPRS_ref1)
+```
+
+The t-value for week is -7.32. Week has a t-value great enough to refute the 0-hypotheses. Based on the results, null hypotheses can be refute for week. It cannot be refute for treatments.
+An ANOVA test on the two models Random Intercept and Random Slope Model: BPRS_ref1 and Random Intercept and Random Slope Model with interaction: BPRS_ref2
+
+As the last thing with this data set, I will plot the fitted values of BPRS.
+
+```{r}
+#Creating a vector of the fitted values
+FittedBPRS <- fitted(BPRS_ref1)
+
+# Create a new column fitted to BPRSL
+BPRSL <- mutate(BPRSL, fitted = FittedBPRS)
+
+#Drawing the plot of BPRSL, with the Fitted values of bprs
+ggplot(BPRSL, aes(x = week, y = fitted, linetype = subject)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(name = "Fitted BPRS values", limits = c(min(BPRSL$bprs), max(BPRSL$bprs))) +
+  scale_x_continuous(name="Week")
+```
+
+The BPRS values go down over time, indicating the study subjects have less/lighter psychiatric symptoms than in the beginning of the study.
+
+Now we compare the BPRS values (real observations) with fitted values side by side. The model fitted the values quite good.
+
+```{r}
+plot1
+
+plot2 <- ggplot(BPRSL, aes(x = week, y = fitted, group = interaction(subject, treatment))) +
+        geom_line(aes(linetype = treatment, color=treatment)) +
+        scale_x_continuous(name = "weeks", breaks = seq(0, 8, by=2)) +
+        scale_y_continuous(name = "fitted values") +
+        theme(legend.position = "top")
+
+plot2
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
