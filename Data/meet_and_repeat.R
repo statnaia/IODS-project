@@ -145,26 +145,3 @@ glimpse(RATSL)
 # write the dataset in long form to datafile
 write.csv(RATSL, file = "RATSL.csv", row.names = FALSE)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
